@@ -15,6 +15,9 @@ export interface Capture {
 
 export interface Session {
   id: string
+  title: string
+  sourceUrl: string
   createdAt: number
+  updatedAt: number
   captureCount: number
 }

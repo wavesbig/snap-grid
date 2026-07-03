@@ -208,6 +208,29 @@ function withRoundedClip(
   ctx.restore()
 }
 
+/** Stroke-less rounded-rect path (used for label pill backgrounds). */
+function drawRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const rr = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.lineTo(x + w - rr, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr)
+  ctx.lineTo(x + w, y + h - rr)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h)
+  ctx.lineTo(x + rr, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rr)
+  ctx.lineTo(x, y + rr)
+  ctx.quadraticCurveTo(x, y, x + rr, y)
+  ctx.closePath()
+}
+
 export async function renderToCanvas(
   layout: StitchLayout,
   mode: 'grid' | 'vertical' | 'subtitle',
@@ -240,16 +263,41 @@ export async function renderToCanvas(
         ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, rect.x, rect.y, rect.w, rect.h)
       }
     })
+
+    // subtitle band: draw MM:SS time-code label on top, outside the rounded clip.
+    if (mode === 'subtitle' && crop === 'band') {
+      const mm = Math.floor(capture.videoTime / 60)
+      const ss = Math.floor(capture.videoTime % 60)
+      const label = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0')
+      const pad = Math.max(6, rect.h * 0.06)
+      const fontSize = Math.max(14, Math.round(rect.h * 0.12))
+      ctx.save()
+      ctx.font = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif'
+      ctx.textBaseline = 'top'
+      ctx.textAlign = 'left'
+      const textWidth = ctx.measureText(label).width
+      ctx.fillStyle = 'rgba(0,0,0,0.65)'
+      drawRoundRect(ctx, rect.x + pad * 0.5, rect.y + pad * 0.5, textWidth + pad, fontSize + pad * 0.5, pad * 0.25)
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(label, rect.x + pad, rect.y + pad * 0.75)
+      ctx.restore()
+    }
   }
 
   return canvas
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  format: 'image/png' | 'image/jpeg' | 'image/webp' = 'image/png',
+  quality = 0.92,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('canvas.toBlob returned null'))),
-      'image/png',
+      format,
+      quality,
     )
   })
 }

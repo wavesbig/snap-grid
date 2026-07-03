@@ -1,4 +1,4 @@
-// Discriminated union for background <-> content communication
+// Discriminated union for background <-> content <-> popup communication
 export interface CaptureRequest {
   type: 'CAPTURE'
   mode: 'grid' | 'subtitle'
@@ -20,6 +20,11 @@ export interface CaptureError {
   message: string
 }
 
+export interface CaptureDeletedMessage {
+  type: 'CAPTURE_DELETED'
+  captureId: string
+}
+
 export interface GetSessionRequest {
   type: 'GET_SESSION'
 }
@@ -35,3 +40,8 @@ export type MessageToBackground =
 
 export type MessageToContent =
   | CaptureRequest
+
+// Broadcast messages (background -> all extension pages like popup/editor)
+export type BroadcastMessage =
+  | CaptureSuccess
+  | CaptureDeletedMessage

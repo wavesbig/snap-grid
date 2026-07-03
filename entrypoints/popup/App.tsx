@@ -4,13 +4,16 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
-import { getCaptureCount } from '@/lib/db';
+import { getCaptureCount, getAllSessions } from '@/lib/db';
+import type { Session } from '@/lib/types';
 
 type CaptureMode = 'grid' | 'subtitle';
 
 function App() {
   const [mode, setMode] = useState<CaptureMode>('grid');
   const [count, setCount] = useState(0);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   useEffect(() => {
     browser.storage.local.get('captureMode').then((res) => {
@@ -20,18 +23,19 @@ function App() {
     });
   }, []);
 
-  const refreshCount = useCallback(() => {
-    getCaptureCount().then(setCount).catch(() => {});
-  }, []);
+  const refreshAll = useCallback(() => {
+    getAllSessions().then(setSessions).catch(() => {});
+    getCaptureCount(selectedSession ?? undefined).then(setCount).catch(() => {});
+  }, [selectedSession]);
 
   useEffect(() => {
-    refreshCount();
+    refreshAll();
     const handler = (msg: { type: string }) => {
-      if (msg.type === 'CAPTURE_SUCCESS') refreshCount();
+      if (msg.type === 'CAPTURE_SUCCESS' || msg.type === 'CAPTURE_DELETED') refreshAll();
     };
     browser.runtime.onMessage.addListener(handler);
     return () => browser.runtime.onMessage.removeListener(handler);
-  }, [refreshCount]);
+  }, [refreshAll]);
 
   const handleModeChange = (value: string) => {
     const m = value as CaptureMode;
@@ -40,7 +44,8 @@ function App() {
   };
 
   const openEditor = () => {
-    const url = (browser.runtime.getURL as (p: string) => string)('/editor.html');
+    const base = (browser.runtime.getURL as (p: string) => string)('/editor.html');
+    const url = selectedSession ? base + '?session=' + encodeURIComponent(selectedSession) : base;
     browser.tabs.create({ url });
     window.close();
   };
@@ -70,9 +75,43 @@ function App() {
           <span className="text-sm text-muted-foreground">张画面</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          当前会话 · 前往 B站 按下快捷键开始
+          {selectedSession ? '已选会话' : '全部画面'} · 前往 B站 按下快捷键开始
         </p>
       </Card>
+
+      {/* session list */}
+      {sessions.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">会话列表</span>
+          <div className="flex flex-col gap-1 max-h-[140px] overflow-y-auto">
+            <button
+              onClick={() => setSelectedSession(null)}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${
+                selectedSession === null
+                  ? 'bg-primary/10 text-foreground'
+                  : 'hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              <span className="text-xs font-medium">全部</span>
+              <span className="text-[10px] tabular-nums text-muted-foreground">{sessions.length} 个视频</span>
+            </button>
+            {sessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSession(s.id)}
+                className={`flex items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${
+                  selectedSession === s.id
+                    ? 'bg-primary/10 text-foreground'
+                    : 'hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                <span className="truncate text-xs font-medium">{s.title}</span>
+                <span className="ml-2 shrink-0 text-[10px] tabular-nums text-muted-foreground">{s.captureCount} 张</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* primary action */}
       <Button size="lg" className="w-full shadow-soft transition-all duration-200 ease-spring hover:-translate-y-px hover:brightness-105 active:scale-[0.985]" onClick={openEditor}>

@@ -185,24 +185,64 @@ function App() {
   const [bandRatio, setBandRatio] = useState(0.3);
   const [radius, setRadius] = useState(0);
   const [bgColor, setBgColor] = useState('transparent');
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpeg' | 'webp'>('png');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const EDITOR_PREFS_KEY = 'editorPrefs';
   const [exporting, setExporting] = useState(false);
   const [previewSize, setPreviewSize] = useState(1);
   const renderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const refresh = useCallback(() => {
-    getSessionCaptures('default').then(setCaptures).catch(() => {});
+  const sessionId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session') ?? 'default';
   }, []);
+
+  const refresh = useCallback(() => {
+    getSessionCaptures(sessionId).then(setCaptures).catch(() => {});
+  }, [sessionId]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // load persisted editor prefs on mount
+  useEffect(() => {
+    browser.storage.local.get(EDITOR_PREFS_KEY).then((res) => {
+      const prefs = res[EDITOR_PREFS_KEY] as {
+        mode?: StitchMode;
+        gap?: number;
+        columns?: number;
+        bandRatio?: number;
+        radius?: number;
+        bgColor?: string;
+        exportFormat?: 'png' | 'jpeg' | 'webp';
+        previewSize?: number;
+      } | undefined;
+      if (!prefs) return;
+      if (prefs.mode) setMode(prefs.mode);
+      if (typeof prefs.gap === 'number') setGap(prefs.gap);
+      if (typeof prefs.columns === 'number') setColumns(prefs.columns);
+      if (typeof prefs.bandRatio === 'number') setBandRatio(prefs.bandRatio);
+      if (typeof prefs.radius === 'number') setRadius(prefs.radius);
+      if (prefs.bgColor) setBgColor(prefs.bgColor);
+      if (prefs.exportFormat) setExportFormat(prefs.exportFormat);
+      if (typeof prefs.previewSize === 'number') setPreviewSize(prefs.previewSize);
+    }).catch(() => {});
+  }, []);
 
   // when mode changes, reset gap to sensible defaults
   const handleModeChange = (newMode: string) => {
     setMode(newMode as StitchMode);
     setGap(newMode === 'subtitle' ? 0 : 12);
   };
+
+  // persist editor prefs whenever they change
+  useEffect(() => {
+    browser.storage.local.set({
+      [EDITOR_PREFS_KEY]: { mode, gap, columns, bandRatio, radius, bgColor, previewSize, exportFormat },
+    }).catch(() => {});
+  }, [mode, gap, columns, bandRatio, radius, bgColor, previewSize]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -222,6 +262,7 @@ function App() {
   const deleteCapture = async (id: string) => {
     setCaptures((prev) => prev.filter((c) => c.id !== id));
     await deleteCaptureFromDB(id).catch(() => {});
+    browser.runtime.sendMessage({ type: 'CAPTURE_DELETED', captureId: id }).catch(() => {});
   };
 
   const layout = useMemo(() => {
@@ -260,11 +301,12 @@ function App() {
     setExporting(true);
     try {
       const canvas = await renderToCanvas(layout, mode, bgColor, { radius, bandRatio });
-      const blob = await canvasToBlob(canvas);
+      const mimeMap = { png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp' } as const;
+      const blob = await canvasToBlob(canvas, mimeMap[exportFormat], 0.92);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `snap-grid-${mode}-${Date.now()}.png`;
+      a.download = `snap-grid-${mode}-${Date.now()}.${exportFormat}`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -429,6 +471,26 @@ function App() {
                     }`}
                   >
                     {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* export format */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-muted-foreground">导出格式</label>
+              <div className="flex gap-1.5">
+                {(['png', 'jpeg', 'webp'] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    onClick={() => setExportFormat(fmt)}
+                    className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] uppercase transition-colors ${
+                      exportFormat === fmt
+                        ? 'border-primary bg-primary/10 text-foreground'
+                        : 'border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {fmt}
                   </button>
                 ))}
               </div>
