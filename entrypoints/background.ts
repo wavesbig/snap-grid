@@ -1,5 +1,5 @@
 import type { CaptureRequest, CaptureSuccess, CaptureError } from '../lib/messaging';
-import { addCaptureToSession } from '../lib/db';
+import { addCaptureToSession, pruneOldCaptures } from '../lib/db';
 import { urlToSessionId, urlToSessionTitle } from '../lib/utils';
 import type { Capture } from '../lib/types';
 
@@ -39,6 +39,12 @@ export default defineBackground(() => {
           createdAt: Date.now(),
         };
         await addCaptureToSession(capture, title, sourceUrl);
+        // auto-prune oldest captures if storage exceeds threshold
+        const pruned = await pruneOldCaptures().catch(() => 0);
+        if (pruned > 0) {
+          console.log('[snap-grid] Auto-pruned', pruned, 'old captures to stay within storage limit');
+          browser.runtime.sendMessage({ type: 'CAPTURE_DELETED', captureId: '' }).catch(() => {});
+        }
         console.log('[snap-grid] Saved:', capture.id, 'session:', sessionId);
       } else if (msg.type === 'CAPTURE_ERROR') {
         console.error('[snap-grid] Error:', msg.message);

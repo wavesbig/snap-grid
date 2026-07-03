@@ -1,6 +1,9 @@
 /**
  * Capture a video frame. Primary path: drawImage onto canvas, then toBlob.
  * Fallback: captureVisibleTab if canvas becomes tainted (CORS).
+ *
+ * Returns the full-resolution blob (for export) and a compact JPEG thumbnail
+ * (max edge 200px) to keep IndexedDB usage small.
  */
 export async function captureVideoFrame(
   video: HTMLVideoElement,
@@ -20,16 +23,16 @@ export async function captureVideoFrame(
   const ctx = canvas.getContext('2d')!
   ctx.drawImage(video, 0, cropY, w, cropH, 0, 0, w, cropH)
 
-  // Primary: direct canvas toBlob
+  // Primary: direct canvas toBlob (full-res PNG for export)
   try {
     const blob = await canvasToBlob(canvas)
-    const thumb = await blobToDataURL(blob)
+    const thumb = await makeThumbnail(canvas)
     return { blob, thumb, width: w, height: cropH }
   } catch {
     // Fallback: captureVisibleTab (captures the whole viewport, not just video)
     const tab = await browser.tabs.captureVisibleTab()
     const blob = await fetch(tab).then((r) => r.blob())
-    const thumb = await blobToDataURL(blob)
+    const thumb = await makeThumbnail(canvas)
     return {
       blob,
       thumb,
@@ -39,20 +42,37 @@ export async function captureVideoFrame(
   }
 }
 
+/** Downscale to max 200px edge, JPEG 0.7 quality — ~5-15KB per thumb. */
+async function makeThumbnail(source: HTMLCanvasElement): Promise<string> {
+  const maxEdge = 200
+  const scale = Math.min(1, maxEdge / Math.max(source.width, source.height))
+  const tw = Math.round(source.width * scale)
+  const th = Math.round(source.height * scale)
+  const tc = document.createElement('canvas')
+  tc.width = tw
+  tc.height = th
+  const tctx = tc.getContext('2d')!
+  tctx.drawImage(source, 0, 0, tw, th)
+  return new Promise((resolve, reject) => {
+    tc.toBlob(
+      (b) => {
+        if (!b) return reject(new Error('thumbnail toBlob failed'))
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(b)
+      },
+      'image/jpeg',
+      0.7,
+    )
+  })
+}
+
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('canvas.toBlob returned null'))),
       'image/png',
     )
-  })
-}
-
-function blobToDataURL(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
   })
 }

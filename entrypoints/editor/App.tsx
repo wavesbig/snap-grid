@@ -27,8 +27,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getSessionCaptures, deleteCapture as deleteCaptureFromDB } from '@/lib/db';
-import type { Capture } from '@/lib/types';
+import { getSessionCaptures, deleteCapture as deleteCaptureFromDB, getAllSessions, clearSession as clearSessionFromDB } from '@/lib/db';
+import type { Capture, Session } from '@/lib/types';
 import type { StitchOptions } from '@/lib/stitch';
 import { computeLayout, renderToCanvas, canvasToBlob } from '@/lib/stitch';
 
@@ -193,14 +193,25 @@ function App() {
   const [previewSize, setPreviewSize] = useState(1);
   const renderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sessionId = useMemo(() => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  const [sessionId, setSessionId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('session') ?? 'default';
-  }, []);
+  });
 
   const refresh = useCallback(() => {
     getSessionCaptures(sessionId).then(setCaptures).catch(() => {});
+    getAllSessions().then(setSessions).catch(() => {});
   }, [sessionId]);
+
+  const switchSession = (newSessionId: string) => {
+    if (newSessionId === sessionId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('session', newSessionId);
+    window.history.replaceState({}, '', url.toString());
+    setSessionId(newSessionId);
+  };
 
   useEffect(() => {
     refresh();
@@ -335,10 +346,27 @@ function App() {
             </span>
           )}
         </div>
-        <Button size="sm" onClick={exportImage} disabled={!layout || exporting}>
+
+        <div className="flex items-center gap-3">
+          {sessions.length > 0 && (
+            <select
+              value={sessionId}
+              onChange={(e) => switchSession(e.target.value)}
+              className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground transition-colors hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="default">默认会话</option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title} ({s.captureCount} 张)
+                </option>
+              ))}
+            </select>
+          )}
+          <Button size="sm" onClick={exportImage} disabled={!layout || exporting}>
           <Download className="size-3.5" strokeWidth={1} />
           {exporting ? '导出中...' : '导出图片'}
-        </Button>
+          </Button>
+        </div>
       </div>
 
       {/* three-column workspace */}
