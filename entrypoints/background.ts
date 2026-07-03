@@ -24,7 +24,13 @@ export default defineBackground(() => {
         const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
         const sourceUrl = tab?.url ?? '';
         const sessionId = urlToSessionId(sourceUrl);
-        const title = tab?.title ?? urlToSessionTitle(sourceUrl);
+        // prefer the page title from content script; clean bilibili suffixes
+        const rawTitle = msg.pageTitle || tab?.title || urlToSessionTitle(sourceUrl);
+        const title = rawTitle
+          .replace(/_哔哩哔哩.*$/, '')
+          .replace(/_bilibili.*$/i, '')
+          .replace(/-哔哩哔哩.*$/, '')
+          .trim();
 
         const capture: Capture = {
           id: msg.captureId,

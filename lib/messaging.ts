@@ -13,6 +13,7 @@ export interface CaptureSuccess {
   videoTime: number
   blob: Blob
   mode: 'grid' | 'subtitle'
+  pageTitle: string
 }
 
 export interface CaptureError {

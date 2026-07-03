@@ -85,6 +85,7 @@ export default defineContentScript({
             videoTime: video.currentTime,
             blob,
             mode: msg.mode,
+            pageTitle: document.title,
           };
           browser.runtime.sendMessage(success);
           const modeLabel = msg.mode === 'subtitle' ? '字幕' : '画面';
