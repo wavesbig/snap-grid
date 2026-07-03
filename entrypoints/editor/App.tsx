@@ -9,6 +9,8 @@ import {
   ImageOff,
   Minus,
   Plus,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react';
 import {
   DndContext,
@@ -28,12 +30,13 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Button as UiButton } from '@/components/ui/button';
 import { getSessionCaptures, deleteCapture as deleteCaptureFromDB, getAllSessions, clearSession as clearSessionFromDB } from '@/lib/db';
 import type { Capture, Session } from '@/lib/types';
 import type { StitchOptions } from '@/lib/stitch';
@@ -355,19 +358,46 @@ function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Select value={sessionId} onValueChange={switchSession}>
-            <SelectTrigger className="w-[220px] text-xs">
-              <SelectValue placeholder="选择会话" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">默认会话</SelectItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <UiButton variant="outline" size="sm" className="w-[220px] justify-between text-xs font-medium">
+                <span className="truncate">
+                  {sessions.find((s) => s.id === sessionId)?.title
+                    ? `${sessions.find((s) => s.id === sessionId)?.title} (${sessions.find((s) => s.id === sessionId)?.captureCount} 张)`
+                    : '默认会话'}
+                </span>
+                <ChevronsUpDown className="size-3.5 shrink-0 opacity-50" strokeWidth={1.5} />
+              </UiButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[220px]">
+              <DropdownMenuItem
+                onClick={() => switchSession('default')}
+                className="flex items-center justify-between text-xs"
+              >
+                默认会话
+                {sessionId === 'default' && <Check className="size-3.5 text-primary" strokeWidth={2} />}
+              </DropdownMenuItem>
+              {sessions.length > 0 && <DropdownMenuSeparator />}
               {sessions.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.title} ({s.captureCount} 张)
-                </SelectItem>
+                <DropdownMenuItem
+                  key={s.id}
+                  onClick={() => switchSession(s.id)}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span className="truncate">{s.title}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-[10px] tabular-nums text-muted-foreground">{s.captureCount} 张</span>
+                    {sessionId === s.id && <Check className="size-3.5 text-primary" strokeWidth={2} />}
+                  </span>
+                </DropdownMenuItem>
               ))}
-            </SelectContent>
-          </Select>
+              {sessions.length === 0 && (
+                <div className="px-2 py-3 text-center text-[11px] text-muted-foreground">
+                  还没有会话
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" onClick={exportImage} disabled={!layout || exporting}>
           <Download className="size-3.5" strokeWidth={1} />
           {exporting ? '导出中...' : '导出图片'}
