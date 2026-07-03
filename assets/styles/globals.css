@@ -1,71 +1,64 @@
 @import "tailwindcss";
 
 /*
- * snap-grid design tokens — Glassmorphism.
- * Frosted glass layers, translucent surfaces, luminous borders.
- * Primary #1856FF, Plus Jakarta Sans, comfortable density.
+ * snap-grid design tokens — taste-soft inspired.
+ * Silver-cool canvas, soft double-bezel surfaces, blue accent.
  */
 
-@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ----- helpers: hex -> HSL components ----- */
-/* #1856FF = 221 100% 54% | #3A344E = 255 21% 25% | #141414 = 0 0% 8% */
-
 :root {
-  --background: 220 30% 96%;
-  --foreground: 0 0% 8%;
+  --background: 220 19% 96%;
+  --foreground: 240 10% 6%;
 
-  /* glass surfaces: translucent white */
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 8%;
+  --card-foreground: 240 10% 8%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 8%;
+  --popover-foreground: 240 10% 8%;
 
-  /* primary = #1856FF */
   --primary: 221 100% 54%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 255 21% 25%;
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 220 16% 92%;
+  --secondary-foreground: 240 10% 8%;
 
-  --muted: 220 20% 93%;
-  --muted-foreground: 220 10% 40%;
+  --muted: 220 16% 92%;
+  --muted-foreground: 240 4% 40%;
 
   --accent: 221 100% 54%;
   --accent-foreground: 0 0% 100%;
 
-  /* semantic colors from DESIGN.md */
-  --destructive: 352 78% 53%;      /* #EA2143 */
+  --destructive: 356 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --success: 152 83% 41%;           /* #07CA6B */
-  --warning: 24 78% 63%;            /* #E89558 */
+  --success: 152 83% 41%;
+  --warning: 38 90% 56%;
 
-  --border: 220 20% 88%;
-  --input: 220 20% 88%;
+  --border: 240 8% 87%;
+  --input: 240 8% 87%;
   --ring: 221 100% 54%;
 
-  --radius: 0.75rem;
+  --radius: 1rem;
 }
 
 .dark {
-  --background: 230 25% 8%;
+  --background: 220 14% 8%;
   --foreground: 0 0% 96%;
 
-  --card: 230 20% 12%;
+  --card: 220 14% 10%;
   --card-foreground: 0 0% 96%;
-  --popover: 230 20% 12%;
+  --popover: 220 14% 10%;
   --popover-foreground: 0 0% 96%;
 
   --primary: 221 100% 60%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 255 21% 30%;
+  --secondary: 220 10% 14%;
   --secondary-foreground: 0 0% 96%;
 
-  --muted: 230 15% 18%;
-  --muted-foreground: 230 10% 62%;
+  --muted: 220 10% 14%;
+  --muted-foreground: 0 0% 67%;
 
   --accent: 221 100% 60%;
   --accent-foreground: 0 0% 100%;
@@ -75,8 +68,8 @@
   --success: 152 70% 48%;
   --warning: 24 70% 65%;
 
-  --border: 230 15% 22%;
-  --input: 230 15% 22%;
+  --border: 220 8% 18%;
+  --input: 220 8% 18%;
   --ring: 221 100% 60%;
 }
 
@@ -107,7 +100,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Plus Jakarta Sans Variable", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-sans:
+    "Geist Variable", Inter, system-ui, -apple-system, "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 @layer base {
@@ -120,6 +115,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled),
@@ -134,62 +130,219 @@
   }
 }
 
-/* Glassmorphism utilities — frosted glass layers + luminous borders */
 @layer utilities {
-  /* frosted glass surface: semi-transparent + backdrop blur + luminous edge */
   .glass {
-    background: hsl(0 0% 100% / 0.6);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid hsl(0 0% 100% / 0.5);
-    box-shadow: 0 4px 24px -4px hsl(221 100% 30% / 0.08),
-      inset 0 1px 0 hsl(0 0% 100% / 0.6);
+    background: hsl(0 0% 100% / 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.72),
+      0 20px 40px -26px rgba(15, 23, 42, 0.1);
   }
   .dark .glass {
-    background: hsl(230 20% 14% / 0.55);
-    border: 1px solid hsl(0 0% 100% / 0.08);
-    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3),
-      inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    background: hsl(220 14% 10% / 0.96);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   }
-  /* softer glass for large surfaces */
   .glass-subtle {
-    background: hsl(0 0% 100% / 0.4);
-    backdrop-filter: blur(10px) saturate(150%);
-    -webkit-backdrop-filter: blur(10px) saturate(150%);
-    border: 1px solid hsl(0 0% 100% / 0.3);
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.34);
   }
   .dark .glass-subtle {
-    background: hsl(230 20% 12% / 0.4);
-    border: 1px solid hsl(0 0% 100% / 0.05);
+    background: hsl(220 12% 12%);
+    border: 1px solid hsl(220 8% 18%);
   }
   .shadow-soft {
-    box-shadow: 0 1px 3px hsl(221 100% 40% / 0.06),
-      0 6px 20px -4px hsl(221 100% 40% / 0.08);
+    box-shadow: 0 6px 18px rgba(13, 13, 13, 0.05);
   }
   .ease-spring {
     transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
-
-  /*
-   * Ambient mesh — colored light blobs behind the glass layer.
-   * Without these, backdrop-filter has nothing meaningful to blur
-   * (popup/editor backgrounds are solid), so the glass effect is invisible.
-   * The blobs sit at z-0; glass surfaces sit on top at z-10+.
-   */
   .glass-canvas {
-    position: relative;
     background:
-      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(221 100% 54% / 0.12), transparent 60%),
-      radial-gradient(ellipse 500px 500px at 85% 75%, hsl(152 83% 41% / 0.08), transparent 55%),
-      radial-gradient(ellipse 400px 300px at 50% 50%, hsl(24 78% 63% / 0.06), transparent 50%),
-      hsl(var(--background));
+      radial-gradient(
+        circle at 8% 10%,
+        rgba(24, 86, 255, 0.08),
+        transparent 24%
+      ),
+      radial-gradient(
+        circle at 92% 18%,
+        rgba(218, 226, 238, 0.82),
+        transparent 22%
+      ),
+      linear-gradient(180deg, hsl(220 19% 96%), hsl(220 18% 93%));
   }
   .dark .glass-canvas {
     background:
-      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(221 100% 54% / 0.15), transparent 60%),
-      radial-gradient(ellipse 500px 500px at 85% 75%, hsl(152 83% 41% / 0.06), transparent 55%),
-      radial-gradient(ellipse 400px 300px at 50% 50%, hsl(24 78% 63% / 0.04), transparent 50%),
+      linear-gradient(180deg, hsl(220 14% 8%), hsl(220 12% 7%)),
       hsl(var(--background));
+  }
+  .popup-canvas {
+    background: linear-gradient(180deg, hsl(220 18% 95%), hsl(220 16% 93.5%));
+  }
+  .dark .popup-canvas {
+    background: linear-gradient(180deg, hsl(220 14% 8%), hsl(220 13% 7.5%));
+  }
+  .surface-card {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      0 18px 36px -28px rgba(15, 23, 42, 0.1);
+  }
+  .dark .surface-card {
+    background: hsl(220 14% 10%);
+    border: 1px solid hsl(220 8% 18%);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  }
+  .surface-muted {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.88),
+      rgba(242, 246, 251, 0.96)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.36);
+  }
+  .dark .surface-muted {
+    background: hsl(220 12% 12%);
+    border: 1px solid hsl(220 8% 18%);
+  }
+  .control-surface {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      0 10px 20px -18px rgba(15, 23, 42, 0.12);
+  }
+  .control-surface:hover {
+    border-color: rgba(255, 255, 255, 0.46);
+    background: rgba(255, 255, 255, 0.9);
+  }
+  .dark .control-surface {
+    background: hsl(220 14% 10%);
+    border: 1px solid hsl(220 8% 18%);
+    box-shadow: none;
+  }
+  .dark .control-surface:hover {
+    border-color: hsl(220 8% 26%);
+    background: hsl(220 12% 12%);
+  }
+  .workspace-stage {
+    background: rgba(255, 255, 255, 0.54);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 28px 60px -34px rgba(15, 23, 42, 0.14);
+  }
+  .dark .workspace-stage {
+    background: linear-gradient(180deg, hsl(220 14% 11%), hsl(220 12% 9%));
+    border: 1px solid hsl(220 8% 18%);
+    box-shadow: none;
+  }
+  .workspace-stage-inner {
+    background: transparent;
+  }
+  .dark .workspace-stage-inner {
+    background: transparent;
+  }
+  .preview-canvas {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.96),
+      rgba(244, 247, 252, 1)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.98),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  }
+  .dark .preview-canvas {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  .preview-toolbar {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      0 12px 24px -20px rgba(15, 23, 42, 0.1);
+  }
+  .dark .preview-toolbar {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+  .soft-shell {
+    background: rgba(255, 255, 255, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.66),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 30px 60px -36px rgba(15, 23, 42, 0.16),
+      0 12px 24px -18px rgba(15, 23, 42, 0.08);
+  }
+  .soft-core {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.94),
+      rgba(244, 247, 252, 0.98)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.96),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  }
+  .soft-subtle-core {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.88),
+      rgba(239, 243, 249, 0.96)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+  .soft-tag {
+    background: rgba(255, 255, 255, 0.68);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .soft-primary-button {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(221 100% 60%));
+    color: hsl(var(--primary-foreground));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.26),
+      0 20px 36px -22px rgba(24, 86, 255, 0.55);
+  }
+  .soft-primary-button:hover {
+    filter: brightness(1.02);
+  }
+  .soft-button-orb {
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition:
+      transform 360ms cubic-bezier(0.16, 1.16, 0.3, 1),
+      background-color 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .soft-primary-button:hover .soft-button-orb {
+    transform: translate(2px, -1px) scale(1.05);
+    background: rgba(255, 255, 255, 0.24);
+  }
+  .soft-primary-button:active {
+    transform: scale(0.985);
+  }
+  .soft-divider {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(15, 23, 42, 0.08),
+      transparent
+    );
   }
 }
 

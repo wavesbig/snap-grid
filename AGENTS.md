@@ -48,6 +48,24 @@ This project uses [shadcn/ui](https://ui.shadcn.com) as its component library. A
 - Conditional classNames use the `cn()` helper from `@/lib/utils`.
 
 **The only exception:** business-specific components that have no shadcn equivalent (e.g. the sortable capture list, the canvas preview area). These belong in the consuming file or a dedicated `components/` subfolder, not in `components/ui/`.
+
+## UI Style Workflow
+
+The project keeps visual style in business layers and global tokens, not in the `shadcn/ui` base components.
+
+- Read `docs/ui-style.md` before making non-trivial visual changes.
+- Read `docs/ui-recipes.md` before redesigning `popup`, `editor`, or other extension surfaces.
+- Treat `components/ui/*` as shared base primitives. Do not restyle them to satisfy a page-specific direction.
+- Prefer extending style through:
+  - `assets/styles/globals.css`
+  - `entrypoints/popup/App.tsx`
+  - `entrypoints/editor/App.tsx`
+  - `entrypoints/content.ts`
+- Keep blue as the single primary accent unless the user explicitly requests a palette change.
+- Prefer soft layer separation over heavy borders. If a screen starts to look like "border nesting", remove wrappers before adding more styling.
+- Popup shell changes need extra caution: the browser-hosted popup frame is not fully controllable, so reduce edge contrast instead of trying to decorate the host border.
+- When introducing a new utility class, use semantic names like `*-canvas`, `*-core`, or `*-surface` rather than visual-only names.
+
 ## Testing Guidelines
 
 No test framework is currently configured. If you add tests, prefer Vitest (WXT/Vite-native) and document the runner and commands here before writing specs.
