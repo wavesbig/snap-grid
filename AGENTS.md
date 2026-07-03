@@ -34,6 +34,20 @@ This repository is a browser extension built with [WXT](https://wxt.dev) (v0.20)
 - WXT entrypoint filenames (e.g. `background.ts`, `popup/index.html`) are conventional — keep them so WXT auto-registers them.
 - No ESLint/Prettier is configured; keep edits consistent with existing files and confirm with `pnpm compile`.
 
+## UI Component Library — shadcn/ui First
+
+This project uses [shadcn/ui](https://ui.shadcn.com) as its component library. All UI components live in `components/ui/`.
+
+**Rule: always prefer shadcn/ui components over hand-rolled markup.** Before writing any custom UI element (dropdowns, dialogs, popovers, tabs, buttons, etc.), check whether a shadcn component exists for it.
+
+- Add new components via: `pnpm dlx shadcn@latest add <component>` (e.g. `select`, `dialog`, `popover`).
+- Available components in this project: `button`, `card`, `kbd`, `tabs`, `select`.
+- If a needed component is missing, add it through the CLI — do not hand-write an equivalent.
+- Compose shadcn components rather than reinventing them. Use built-in variants (`variant="outline"`, `size="sm"`) before adding custom styles.
+- Use semantic design tokens (`bg-primary`, `text-muted-foreground`, `bg-card`) — never raw color values.
+- Conditional classNames use the `cn()` helper from `@/lib/utils`.
+
+**The only exception:** business-specific components that have no shadcn equivalent (e.g. the sortable capture list, the canvas preview area). These belong in the consuming file or a dedicated `components/` subfolder, not in `components/ui/`.
 ## Testing Guidelines
 
 No test framework is currently configured. If you add tests, prefer Vitest (WXT/Vite-native) and document the runner and commands here before writing specs.
