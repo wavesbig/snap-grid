@@ -1,28 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Grid2x2, PanelTop, Film, Trash2 } from 'lucide-react';
+import { Grid2x2, PanelTop, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Kbd, KbdGroup } from '@/components/ui/kbd';
 import { getCaptureCount, getAllSessions, getCaptureBytes, clearAll, getStorageEstimate } from '@/lib/db';
 import type { Session } from '@/lib/types';
 
-type CaptureMode = 'grid' | 'subtitle';
-
 function App() {
-  const [mode, setMode] = useState<CaptureMode>('grid');
   const [count, setCount] = useState(0);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [storageUsed, setStorageUsed] = useState(0);
 
-  useEffect(() => {
-    browser.storage.local.get('captureMode').then((res) => {
-      if (res.captureMode === 'subtitle' || res.captureMode === 'grid') {
-        setMode(res.captureMode);
-      }
-    });
-  }, []);
 
   const refreshAll = useCallback(() => {
     getAllSessions().then(setSessions).catch(() => {});
@@ -39,11 +28,6 @@ function App() {
     return () => browser.runtime.onMessage.removeListener(handler);
   }, [refreshAll]);
 
-  const handleModeChange = (value: string) => {
-    const m = value as CaptureMode;
-    setMode(m);
-    browser.storage.local.set({ captureMode: m });
-  };
 
   const handleClearAll = () => {
     clearAll().then(() => refreshAll()).catch(() => {});
@@ -125,22 +109,6 @@ function App() {
         打开编辑器
       </Button>
 
-      {/* capture mode */}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium text-muted-foreground">截取模式</span>
-        <Tabs value={mode} onValueChange={handleModeChange}>
-          <TabsList className="w-full">
-            <TabsTrigger value="grid" className="flex-1 transition-transform active:scale-[0.97]">
-              <Grid2x2 className="size-3.5" strokeWidth={1} />
-              拼图模式
-            </TabsTrigger>
-            <TabsTrigger value="subtitle" className="flex-1 transition-transform active:scale-[0.97]">
-              <Film className="size-3.5" strokeWidth={1} />
-              字幕模式
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
 
       {/* storage usage */}
       {storageUsed > 0 && (

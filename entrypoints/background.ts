@@ -9,9 +9,8 @@ export default defineBackground(() => {
       if (command !== 'capture-frame') return;
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return;
-      const { mode: storedMode } = await browser.storage.local.get('captureMode');
-      const mode = storedMode === 'subtitle' ? 'subtitle' : 'grid';
-      const msg: CaptureRequest = { type: 'CAPTURE', mode };
+      // always capture full frame; mode (grid/subtitle) is chosen in the editor
+      const msg: CaptureRequest = { type: 'CAPTURE', mode: 'grid' };
       browser.tabs.sendMessage(tab.id, msg);
     });
   } catch {
