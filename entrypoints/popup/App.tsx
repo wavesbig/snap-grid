@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Grid2x2, PanelTop, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   clearAll,
   getStorageEstimate,
 } from "@/lib/db";
+import { formatBytes, urlToSessionId } from "@/lib/utils";
 import type { Session } from "@/lib/types";
 
 function App() {
@@ -17,6 +18,14 @@ function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [storageUsed, setStorageUsed] = useState(0);
+  const [currentPageSessionId, setCurrentPageSessionId] = useState<string | null>(
+    null,
+  );
+  const shouldAutoSelectCurrentSession = useRef(true);
+  const isFollowingCurrentPage =
+    !!currentPageSessionId && selectedSession === currentPageSessionId;
+  const selectedSessionTitle =
+    sessions.find((session) => session.id === selectedSession)?.title ?? null;
 
   const refreshAll = useCallback(() => {
     getAllSessions()
@@ -40,6 +49,25 @@ function App() {
     return () => browser.runtime.onMessage.removeListener(handler);
   }, [refreshAll]);
 
+  useEffect(() => {
+    browser.tabs
+      .query({ active: true, currentWindow: true })
+      .then(([tab]) => {
+        if (!tab?.url || !/^https?:\/\//.test(tab.url)) {
+          setCurrentPageSessionId(null);
+          return;
+        }
+        setCurrentPageSessionId(urlToSessionId(tab.url));
+      })
+      .catch(() => setCurrentPageSessionId(null));
+  }, []);
+
+  useEffect(() => {
+    if (!shouldAutoSelectCurrentSession.current || !currentPageSessionId) return;
+    if (!sessions.some((session) => session.id === currentPageSessionId)) return;
+    setSelectedSession(currentPageSessionId);
+  }, [currentPageSessionId, sessions]);
+
   const handleClearAll = () => {
     clearAll()
       .then(() => refreshAll())
@@ -50,8 +78,14 @@ function App() {
     const base = (browser.runtime.getURL as (p: string) => string)(
       "/editor.html",
     );
-    const url = selectedSession
-      ? base + "?session=" + encodeURIComponent(selectedSession)
+    const sessionToOpen =
+      selectedSession ??
+      (currentPageSessionId &&
+      sessions.some((session) => session.id === currentPageSessionId)
+        ? currentPageSessionId
+        : null);
+    const url = sessionToOpen
+      ? base + "?session=" + encodeURIComponent(sessionToOpen)
       : base;
     browser.tabs.create({ url });
     window.close();
@@ -92,11 +126,19 @@ function App() {
                   <span className="text-sm text-muted-foreground">张画面</span>
                 </div>
                 <span className="soft-tag rounded-full px-3 py-1 text-muted-foreground dark:bg-black/10">
-                  {selectedSession ? "当前会话" : "全部会话"}
+                  {selectedSession
+                    ? isFollowingCurrentPage
+                      ? "当前页面"
+                      : "已选会话"
+                    : "全部会话"}
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                前往 B 站页面，按 `Alt + S` 快速截取当前画面。
+                {selectedSession
+                  ? isFollowingCurrentPage
+                    ? "已自动定位到当前页面对应的视频会话，打开编辑器会直接进入该会话。"
+                    : `当前查看“${selectedSessionTitle ?? "所选会话"}”，打开编辑器会进入这个会话。`
+                  : "当前查看全部会话，前往 B 站页面按 `Alt + S` 可继续截取当前画面。"}
               </p>
             </Card>
           </div>
@@ -114,7 +156,10 @@ function App() {
               </div>
               <div className="flex max-h-[152px] flex-col gap-1.5 overflow-y-auto">
                 <button
-                  onClick={() => setSelectedSession(null)}
+                  onClick={() => {
+                    shouldAutoSelectCurrentSession.current = false;
+                    setSelectedSession(null);
+                  }}
                   className={`flex items-center justify-between rounded-2xl px-3 py-2.5 text-left transition-colors ${
                     selectedSession === null
                       ? "soft-primary-button text-primary-foreground"
@@ -135,7 +180,10 @@ function App() {
                 {sessions.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setSelectedSession(s.id)}
+                    onClick={() => {
+                      shouldAutoSelectCurrentSession.current = false;
+                      setSelectedSession(s.id);
+                    }}
                     className={`flex items-center justify-between rounded-2xl px-3 py-2.5 text-left transition-colors ${
                       selectedSession === s.id
                         ? "soft-primary-button text-primary-foreground"
@@ -181,7 +229,7 @@ function App() {
                     存储占用
                   </span>
                   <span className="text-[11px] tabular-nums text-foreground/80">
-                    {(storageUsed / 1024 / 1024).toFixed(1)} MB
+                    {formatBytes(storageUsed)}
                   </span>
                 </div>
                 <button

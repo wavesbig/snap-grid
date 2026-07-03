@@ -30,6 +30,17 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -42,7 +53,10 @@ import {
   deleteCapture as deleteCaptureFromDB,
   getAllSessions,
   clearSession as clearSessionFromDB,
+  clearAll,
+  getCaptureBytes,
 } from "@/lib/db";
+import { formatBytes } from "@/lib/utils";
 import type { Capture, Session } from "@/lib/types";
 import type { StitchOptions } from "@/lib/stitch";
 import { computeLayout, renderToCanvas, canvasToBlob } from "@/lib/stitch";
@@ -222,6 +236,8 @@ function App() {
   const renderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [clearing, setClearing] = useState(false);
 
   const [sessionId, setSessionId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -234,6 +250,9 @@ function App() {
       .catch(() => {});
     getAllSessions()
       .then(setSessions)
+      .catch(() => {});
+    getCaptureBytes()
+      .then(setStorageUsed)
       .catch(() => {});
   }, [sessionId]);
 
@@ -325,6 +344,45 @@ function App() {
     browser.runtime
       .sendMessage({ type: "CAPTURE_DELETED", captureId: id })
       .catch(() => {});
+    getCaptureBytes()
+      .then(setStorageUsed)
+      .catch(() => {});
+  };
+
+  const handleClearCurrentSession = async () => {
+    setClearing(true);
+    try {
+      await clearSessionFromDB(sessionId);
+      await browser.runtime
+        .sendMessage({ type: "CAPTURE_DELETED" })
+        .catch(() => {});
+      if (sessionId !== "default") {
+        switchSession("default");
+      } else {
+        refresh();
+      }
+    } catch {
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    setClearing(true);
+    try {
+      await clearAll();
+      await browser.runtime
+        .sendMessage({ type: "CAPTURE_DELETED" })
+        .catch(() => {});
+      if (sessionId !== "default") {
+        switchSession("default");
+      } else {
+        refresh();
+      }
+    } catch {
+    } finally {
+      setClearing(false);
+    }
   };
 
   const layout = useMemo(() => {
@@ -395,6 +453,10 @@ function App() {
         ? "border border-primary/16 bg-primary text-primary-foreground"
         : "control-surface text-muted-foreground hover:text-foreground"
     }`;
+
+  const currentSessionLabel =
+    sessions.find((s) => s.id === sessionId)?.title ??
+    (sessionId === "default" ? "默认会话" : "当前会话");
 
   return (
     <div className="glass-canvas flex h-[100dvh] flex-col p-4 text-foreground">
@@ -762,6 +824,100 @@ function App() {
                   </span>
                 </div>
               )}
+
+              <div className="soft-divider h-px" />
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      存储管理
+                    </span>
+                    <span className="text-[10px] text-destructive/80">
+                      危险操作，不可撤销
+                    </span>
+                  </div>
+                  <span className="text-[11px] tabular-nums text-foreground/80">
+                    {formatBytes(storageUsed)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={captures.length === 0 || clearing}
+                        className="h-10 w-full justify-between rounded-full border-destructive/24 bg-destructive/7 px-3 text-[11px] font-medium text-destructive shadow-none hover:bg-destructive/12 hover:text-destructive"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Trash2 className="size-3.5" strokeWidth={1.5} />
+                          清空当前会话
+                        </span>
+                        <span className="text-[10px] text-destructive/70">
+                          {captures.length} 张
+                        </span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent size="sm" className="rounded-3xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>清空当前会话？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          会删除“{currentSessionLabel}
+                          ”中的所有截图，此操作无法撤销。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-full">
+                          取消
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleClearCurrentSession}
+                          variant="destructive"
+                          className="rounded-full"
+                        >
+                          确认清空
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={storageUsed === 0 || clearing}
+                        className="h-10 w-full justify-between rounded-full px-3 text-[11px] font-medium shadow-none"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Trash2 className="size-3.5" strokeWidth={1.5} />
+                          清空全部存储
+                        </span>
+                        <span className="text-[10px] text-white/75">高风险</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent size="sm" className="rounded-3xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>清空全部存储？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          会删除所有会话和截图数据，此操作无法撤销。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-full">
+                          取消
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleClearAll}
+                          variant="destructive"
+                          className="rounded-full"
+                        >
+                          确认清空
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
             </div>
           </div>
         </div>
