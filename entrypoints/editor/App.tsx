@@ -147,7 +147,7 @@ function SortableCapture({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-2 rounded-lg bg-card p-2 ring-1 transition-shadow ${
+      className={`group flex items-center gap-2 rounded-xl glass-subtle p-2 ring-1 transition-shadow ${
         isDragging ? 'shadow-soft ring-primary/40' : 'ring-border hover:ring-foreground/20'
       }`}
     >

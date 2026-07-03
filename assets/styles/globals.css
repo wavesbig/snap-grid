@@ -1,56 +1,83 @@
 @import "tailwindcss";
 
 /*
- * snap-grid design tokens.
- * Linear-style minimalist product UI.
- * Electric-blue accent, Geist type, single-radius token, functional motion.
+ * snap-grid design tokens — Glassmorphism.
+ * Frosted glass layers, translucent surfaces, luminous borders.
+ * Primary #1856FF, Plus Jakarta Sans, comfortable density.
  */
+
+@import "@fontsource-variable/plus-jakarta-sans";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ----- helpers: hex -> HSL components ----- */
+/* #1856FF = 221 100% 54% | #3A344E = 255 21% 25% | #141414 = 0 0% 8% */
+
 :root {
-  --background: 240 20% 97%;
-  --foreground: 240 12% 12%;
+  --background: 220 30% 96%;
+  --foreground: 0 0% 8%;
+
+  /* glass surfaces: translucent white */
   --card: 0 0% 100%;
-  --card-foreground: 240 12% 12%;
+  --card-foreground: 0 0% 8%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 12% 12%;
-  --primary: 215 90% 48%;
+  --popover-foreground: 0 0% 8%;
+
+  /* primary = #1856FF */
+  --primary: 221 100% 54%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 16% 93%;
-  --secondary-foreground: 240 12% 18%;
-  --muted: 240 16% 94%;
-  --muted-foreground: 240 8% 42%;
-  --accent: 215 90% 48%;
+
+  --secondary: 255 21% 25%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 220 20% 93%;
+  --muted-foreground: 220 10% 40%;
+
+  --accent: 221 100% 54%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 51%;
+
+  /* semantic colors from DESIGN.md */
+  --destructive: 352 78% 53%;      /* #EA2143 */
   --destructive-foreground: 0 0% 100%;
-  --border: 240 16% 89%;
-  --input: 240 16% 89%;
-  --ring: 215 90% 48%;
+  --success: 152 83% 41%;           /* #07CA6B */
+  --warning: 24 78% 63%;            /* #E89558 */
+
+  --border: 220 20% 88%;
+  --input: 220 20% 88%;
+  --ring: 221 100% 54%;
+
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 240 12% 7%;
+  --background: 230 25% 8%;
   --foreground: 0 0% 96%;
-  --card: 240 10% 11%;
+
+  --card: 230 20% 12%;
   --card-foreground: 0 0% 96%;
-  --popover: 240 10% 11%;
+  --popover: 230 20% 12%;
   --popover-foreground: 0 0% 96%;
-  --primary: 215 92% 62%;
+
+  --primary: 221 100% 60%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 240 8% 16%;
+
+  --secondary: 255 21% 30%;
   --secondary-foreground: 0 0% 96%;
-  --muted: 240 8% 16%;
-  --muted-foreground: 240 6% 64%;
-  --accent: 215 92% 62%;
+
+  --muted: 230 15% 18%;
+  --muted-foreground: 230 10% 62%;
+
+  --accent: 221 100% 60%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 62% 48%;
+
+  --destructive: 352 70% 55%;
   --destructive-foreground: 0 0% 96%;
-  --border: 240 8% 18%;
-  --input: 240 8% 18%;
-  --ring: 215 92% 62%;
+  --success: 152 70% 48%;
+  --warning: 24 70% 65%;
+
+  --border: 230 15% 22%;
+  --input: 230 15% 22%;
+  --ring: 221 100% 60%;
 }
 
 @theme inline {
@@ -70,6 +97,8 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -77,9 +106,8 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", "PingFang SC",
-    "Microsoft YaHei", sans-serif;
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 @layer base {
@@ -106,11 +134,37 @@
   }
 }
 
-/* Apple-tier soft utilities — token-driven, applied via className on shadcn components */
+/* Glassmorphism utilities — frosted glass layers + luminous borders */
 @layer utilities {
+  /* frosted glass surface: semi-transparent + backdrop blur + luminous edge */
+  .glass {
+    background: hsl(0 0% 100% / 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid hsl(0 0% 100% / 0.5);
+    box-shadow: 0 4px 24px -4px hsl(221 100% 30% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.6);
+  }
+  .dark .glass {
+    background: hsl(230 20% 14% / 0.55);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.3),
+      inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  }
+  /* softer glass for large surfaces */
+  .glass-subtle {
+    background: hsl(0 0% 100% / 0.4);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    border: 1px solid hsl(0 0% 100% / 0.3);
+  }
+  .dark .glass-subtle {
+    background: hsl(230 20% 12% / 0.4);
+    border: 1px solid hsl(0 0% 100% / 0.05);
+  }
   .shadow-soft {
-    box-shadow: 0 1px 2px hsl(240 20% 30% / 0.05),
-      0 4px 12px -2px hsl(240 20% 30% / 0.07);
+    box-shadow: 0 1px 3px hsl(221 100% 40% / 0.06),
+      0 6px 20px -4px hsl(221 100% 40% / 0.08);
   }
   .ease-spring {
     transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);

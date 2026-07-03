@@ -57,7 +57,7 @@ function App() {
   };
 
   return (
-    <div className="flex w-[360px] flex-col gap-4 bg-background px-5 py-6 text-foreground">
+    <div className="glass flex w-[360px] flex-col gap-4 rounded-2xl px-5 py-6 text-foreground">
       {/* brand header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -75,7 +75,7 @@ function App() {
       </div>
 
       {/* session status */}
-      <Card className="gap-1.5 border-0 bg-card px-4 py-3.5 shadow-soft">
+      <Card className="glass-subtle gap-1.5 rounded-xl border-0 px-4 py-3.5 shadow-soft">
         <div className="flex items-baseline gap-1.5">
           <span className="text-2xl font-semibold tabular-nums tracking-tight">{count}</span>
           <span className="text-sm text-muted-foreground">张画面</span>
