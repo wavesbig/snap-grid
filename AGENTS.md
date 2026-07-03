@@ -53,7 +53,7 @@ This project uses [shadcn/ui](https://ui.shadcn.com) as its component library. A
 
 The project keeps visual style in business layers and global tokens, not in the `shadcn/ui` base components.
 
-- Read `docs/ui-style.md` before making non-trivial visual changes.
+- Read `DESIGN.md` before making non-trivial visual changes.
 - Read `docs/ui-recipes.md` before redesigning `popup`, `editor`, or other extension surfaces.
 - Treat `components/ui/*` as shared base primitives. Do not restyle them to satisfy a page-specific direction.
 - Prefer extending style through:

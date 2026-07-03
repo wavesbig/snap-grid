@@ -2,6 +2,8 @@
 
 本文件记录当前项目中几种已经验证过的界面拼装方式。
 
+在使用本文件前，先阅读根目录 `DESIGN.md`。`DESIGN.md` 负责说明这套设计“是什么”，本文件负责说明它在当前项目里“怎么拼出来”。
+
 目标：
 
 - 让 AI 能直接复用已有结构
@@ -20,9 +22,7 @@
 ```tsx
 <div className="glass-canvas popup-canvas w-[372px] p-4 text-foreground">
   <div className="soft-shell rounded-[32px] p-1.5">
-    <div className="soft-core rounded-[26px] p-4">
-      {/* content */}
-    </div>
+    <div className="soft-core rounded-[26px] p-4">{/* content */}</div>
   </div>
 </div>
 ```
@@ -76,8 +76,8 @@
 <button
   className={
     active
-      ? 'soft-primary-button text-primary-foreground'
-      : 'control-surface text-muted-foreground'
+      ? "soft-primary-button text-primary-foreground"
+      : "control-surface text-muted-foreground"
   }
 >
   ...
