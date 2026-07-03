@@ -41,7 +41,7 @@ function App() {
   };
 
   return (
-    <div className="glass flex w-[360px] flex-col gap-4 rounded-2xl px-5 py-6 text-foreground">
+    <div className="glass-canvas flex w-[360px] flex-col gap-4 rounded-2xl px-5 py-6 text-foreground">
       {/* brand header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">

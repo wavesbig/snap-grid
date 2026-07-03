@@ -169,6 +169,28 @@
   .ease-spring {
     transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
+
+  /*
+   * Ambient mesh — colored light blobs behind the glass layer.
+   * Without these, backdrop-filter has nothing meaningful to blur
+   * (popup/editor backgrounds are solid), so the glass effect is invisible.
+   * The blobs sit at z-0; glass surfaces sit on top at z-10+.
+   */
+  .glass-canvas {
+    position: relative;
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(221 100% 54% / 0.12), transparent 60%),
+      radial-gradient(ellipse 500px 500px at 85% 75%, hsl(152 83% 41% / 0.08), transparent 55%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, hsl(24 78% 63% / 0.06), transparent 50%),
+      hsl(var(--background));
+  }
+  .dark .glass-canvas {
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(221 100% 54% / 0.15), transparent 60%),
+      radial-gradient(ellipse 500px 500px at 85% 75%, hsl(152 83% 41% / 0.06), transparent 55%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, hsl(24 78% 63% / 0.04), transparent 50%),
+      hsl(var(--background));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

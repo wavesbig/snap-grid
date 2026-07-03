@@ -342,7 +342,7 @@ function App() {
   ];
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-background text-foreground">
+    <div className="glass-canvas flex h-[100dvh] flex-col text-foreground">
       {/* top bar */}
       <div className="flex items-center justify-between border-b border-border px-6 py-3">
         <div className="flex items-center gap-2.5">
