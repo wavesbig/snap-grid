@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+/*
+ * snap-grid design tokens.
+ * Linear-style minimalist product UI.
+ * Electric-blue accent, Geist type, single-radius token, functional motion.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: 240 20% 97%;
+  --foreground: 240 12% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 12% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 12% 12%;
+  --primary: 215 90% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 16% 93%;
+  --secondary-foreground: 240 12% 18%;
+  --muted: 240 16% 94%;
+  --muted-foreground: 240 8% 42%;
+  --accent: 215 90% 48%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 16% 89%;
+  --input: 240 16% 89%;
+  --ring: 215 90% 48%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 240 12% 7%;
+  --foreground: 0 0% 96%;
+  --card: 240 10% 11%;
+  --card-foreground: 0 0% 96%;
+  --popover: 240 10% 11%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 215 92% 62%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 8% 16%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 240 8% 16%;
+  --muted-foreground: 240 6% 64%;
+  --accent: 215 92% 62%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 48%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 240 8% 18%;
+  --input: 240 8% 18%;
+  --ring: 215 92% 62%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-xs: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="tab"]:not(:disabled),
+  [role="menuitem"],
+  summary,
+  select {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Apple-tier soft utilities — token-driven, applied via className on shadcn components */
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 1px 2px hsl(240 20% 30% / 0.05),
+      0 4px 12px -2px hsl(240 20% 30% / 0.07);
+  }
+  .ease-spring {
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

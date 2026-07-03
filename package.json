@@ -1,0 +1,45 @@
+{
+  "name": "snap-grid",
+  "description": "在 B站 等视频平台快速截取画面并拼接的浏览器扩展",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource-variable/geist": "^5.2.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.22.0",
+    "radix-ui": "^1.6.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/chrome": "^0.2.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@wxt-dev/module-react": "^1.1.5",
+    "playwright": "^1.61.1",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9",
+    "wxt": "^0.20.27"
+  }
+}
