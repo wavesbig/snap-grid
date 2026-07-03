@@ -9,8 +9,6 @@ import {
   ImageOff,
   Minus,
   Plus,
-  ChevronDown,
-  Check,
 } from 'lucide-react';
 import {
   DndContext,
@@ -29,6 +27,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getSessionCaptures, deleteCapture as deleteCaptureFromDB, getAllSessions, clearSession as clearSessionFromDB } from '@/lib/db';
 import type { Capture, Session } from '@/lib/types';
 import type { StitchOptions } from '@/lib/stitch';
@@ -116,98 +121,6 @@ function ParamStepper({
   );
 }
 
-// ----- session switcher dropdown -----
-
-function SessionSwitcher({
-  sessions,
-  currentId,
-  captureCount,
-  onSelect,
-}: {
-  sessions: Session[];
-  currentId: string;
-  captureCount: number;
-  onSelect: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
-
-  const current = sessions.find((s) => s.id === currentId);
-  const label = current
-    ? `${current.title} (${current.captureCount} 张)`
-    : `默认会话 (${captureCount} 张)`;
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:border-foreground/25 hover:shadow-soft"
-      >
-        <span className="max-w-[200px] truncate">{label}</span>
-        <ChevronDown
-          className={`size-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          strokeWidth={1.5}
-        />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[240px] overflow-hidden rounded-xl border border-border bg-popover shadow-soft">
-          <div className="max-h-[280px] overflow-y-auto p-1">
-            <button
-              onClick={() => {
-                onSelect('default');
-                setOpen(false);
-              }}
-              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${
-                currentId === 'default'
-                  ? 'bg-primary/10 text-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <span className="text-xs font-medium">默认会话</span>
-              {currentId === 'default' && <Check className="size-3.5 text-primary" strokeWidth={2} />}
-            </button>
-            {sessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  onSelect(s.id);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
-                  currentId === s.id
-                    ? 'bg-primary/10 text-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <span className="truncate text-xs font-medium">{s.title}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-[10px] tabular-nums text-muted-foreground">{s.captureCount} 张</span>
-                  {currentId === s.id && <Check className="size-3.5 text-primary" strokeWidth={2} />}
-                </div>
-              </button>
-            ))}
-            {sessions.length === 0 && (
-              <div className="px-3 py-4 text-center text-[11px] text-muted-foreground">
-                还没有会话
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 // ----- sortable capture item -----
 
 function SortableCapture({
@@ -442,12 +355,19 @@ function App() {
         </div>
 
         <div className="flex items-center gap-3">
-          <SessionSwitcher
-            sessions={sessions}
-            currentId={sessionId}
-            captureCount={captures.length}
-            onSelect={switchSession}
-          />
+          <Select value={sessionId} onValueChange={switchSession}>
+            <SelectTrigger className="w-[220px] text-xs">
+              <SelectValue placeholder="选择会话" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">默认会话</SelectItem>
+              {sessions.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.title} ({s.captureCount} 张)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={exportImage} disabled={!layout || exporting}>
           <Download className="size-3.5" strokeWidth={1} />
           {exporting ? '导出中...' : '导出图片'}
