@@ -33,7 +33,7 @@ export default defineBackground(() => {
 
         const capture: Capture = {
           id: msg.captureId,
-          blob: msg.blob,
+          originalDataUrl: msg.originalDataUrl,
           thumb: msg.thumb,
           width: msg.width,
           height: msg.height,

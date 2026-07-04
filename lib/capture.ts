@@ -2,13 +2,19 @@
  * Capture a video frame. Primary path: drawImage onto canvas, then toBlob.
  * Fallback: captureVisibleTab if canvas becomes tainted (CORS).
  *
- * Returns the full-resolution blob (for export) and a compact JPEG thumbnail
- * (max edge 200px) to keep IndexedDB usage small.
+ * Returns two image tiers for different responsibilities:
+ * - originalDataUrl: original capture for editor preview and export
+ * - thumb: compact data URL for list items
  */
 export async function captureVideoFrame(
   video: HTMLVideoElement,
   mode: 'grid' | 'subtitle',
-): Promise<{ blob: Blob; thumb: string; width: number; height: number }> {
+): Promise<{
+  originalDataUrl: string
+  thumb: string
+  width: number
+  height: number
+}> {
   const w = video.videoWidth
   const h = video.videoHeight
   if (!w || !h) throw new Error('Video not ready: no video dimensions')
@@ -26,15 +32,17 @@ export async function captureVideoFrame(
   // Primary: direct canvas toBlob (full-res PNG for export)
   try {
     const blob = await canvasToBlob(canvas)
+    const originalDataUrl = await blobToDataUrl(blob)
     const thumb = await makeThumbnail(canvas)
-    return { blob, thumb, width: w, height: cropH }
+    return { originalDataUrl, thumb, width: w, height: cropH }
   } catch {
     // Fallback: captureVisibleTab (captures the whole viewport, not just video)
     const tab = await browser.tabs.captureVisibleTab()
     const blob = await fetch(tab).then((r) => r.blob())
+    const originalDataUrl = await blobToDataUrl(blob)
     const thumb = await makeThumbnail(canvas)
     return {
-      blob,
+      originalDataUrl,
       thumb,
       width: video.offsetWidth,
       height: video.offsetHeight,
@@ -74,5 +82,14 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
       (b) => (b ? resolve(b) : reject(new Error('canvas.toBlob returned null'))),
       'image/png',
     )
+  })
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
   })
 }

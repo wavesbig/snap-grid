@@ -10,7 +10,12 @@ import {
   clearAll,
   getStorageEstimate,
 } from "@/lib/db";
-import { formatBytes, urlToSessionId } from "@/lib/utils";
+import {
+  formatBytes,
+  getCaptureShortcutLabel,
+  getCaptureShortcutParts,
+  urlToSessionId,
+} from "@/lib/utils";
 import type { Session } from "@/lib/types";
 
 function App() {
@@ -26,6 +31,8 @@ function App() {
     !!currentPageSessionId && selectedSession === currentPageSessionId;
   const selectedSessionTitle =
     sessions.find((session) => session.id === selectedSession)?.title ?? null;
+  const shortcutLabel = getCaptureShortcutLabel();
+  const [shortcutModifier, shortcutKey] = getCaptureShortcutParts();
 
   const refreshAll = useCallback(() => {
     getAllSessions()
@@ -138,7 +145,7 @@ function App() {
                   ? isFollowingCurrentPage
                     ? "已自动定位到当前页面对应的视频会话，打开编辑器会直接进入该会话。"
                     : `当前查看“${selectedSessionTitle ?? "所选会话"}”，打开编辑器会进入这个会话。`
-                  : "当前查看全部会话，前往 B 站页面按 `Alt + S` 可继续截取当前画面。"}
+                  : `当前查看全部会话，前往 B 站页面按 ${shortcutLabel} 可继续截取当前画面。`}
               </p>
             </Card>
           </div>
@@ -248,10 +255,10 @@ function App() {
             <span className="text-[11px] text-muted-foreground">快速截取</span>
             <KbdGroup>
               <Kbd className="border-border bg-white text-foreground dark:bg-transparent">
-                Alt
+                {shortcutModifier}
               </Kbd>
               <Kbd className="border-border bg-white text-foreground dark:bg-transparent">
-                S
+                {shortcutKey}
               </Kbd>
             </KbdGroup>
           </div>

@@ -12,6 +12,26 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+export function isApplePlatform(): boolean {
+  if (typeof navigator === 'undefined') return false;
+
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+    navigator.platform ??
+    '';
+  const userAgent = navigator.userAgent ?? '';
+
+  return /Mac|iPhone|iPad|iPod/i.test(platform) || /Mac|iPhone|iPad|iPod/i.test(userAgent);
+}
+
+export function getCaptureShortcutLabel(): string {
+  return `${isApplePlatform() ? 'Option' : 'Alt'} + S`;
+}
+
+export function getCaptureShortcutParts(): [string, string] {
+  return [isApplePlatform() ? 'Option' : 'Alt', 'S'];
+}
+
 /**
  * Extract a stable session ID from a Bilibili URL.
  * Uses BV id (e.g. BV1xx411c7mD) as the session key so captures

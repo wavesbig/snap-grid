@@ -1,20 +1,24 @@
 import type { Capture, Session } from './types'
 
 const DB_NAME = 'snap-grid'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
     request.onupgradeneeded = () => {
       const db = request.result
-      if (!db.objectStoreNames.contains('captures')) {
-        const store = db.createObjectStore('captures', { keyPath: 'id' })
-        store.createIndex('sessionId', 'sessionId', { unique: false })
+      // This project no longer supports older capture schemas.
+      if (db.objectStoreNames.contains('captures')) {
+        db.deleteObjectStore('captures')
       }
-      if (!db.objectStoreNames.contains('sessions')) {
-        db.createObjectStore('sessions', { keyPath: 'id' })
+      if (db.objectStoreNames.contains('sessions')) {
+        db.deleteObjectStore('sessions')
       }
+
+      const captureStore = db.createObjectStore('captures', { keyPath: 'id' })
+      captureStore.createIndex('sessionId', 'sessionId', { unique: false })
+      db.createObjectStore('sessions', { keyPath: 'id' })
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
@@ -202,7 +206,7 @@ export async function getCaptureBytes(): Promise<number> {
     request.onsuccess = () => {
       let total = 0
       for (const cap of request.result as Capture[]) {
-        total += cap.blob?.size ?? 0
+        total += cap.originalDataUrl.length
         total += cap.thumb?.length ?? 0
       }
       resolve(total)
@@ -225,7 +229,7 @@ export async function pruneOldCaptures(maxBytes = 80 * 1024 * 1024): Promise<num
   })
 
   let totalBytes = captures.reduce((sum, c) => {
-    return sum + (c.blob?.size ?? 0) + (c.thumb?.length ?? 0)
+    return sum + c.originalDataUrl.length + (c.thumb?.length ?? 0)
   }, 0)
 
   if (totalBytes <= maxBytes) return 0
@@ -237,7 +241,7 @@ export async function pruneOldCaptures(maxBytes = 80 * 1024 * 1024): Promise<num
 
   for (const cap of sorted) {
     if (totalBytes <= maxBytes) break
-    const capBytes = (cap.blob?.size ?? 0) + (cap.thumb?.length ?? 0)
+    const capBytes = cap.originalDataUrl.length + (cap.thumb?.length ?? 0)
     totalBytes -= capBytes
     toDelete.push(cap.id)
     removed++

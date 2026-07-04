@@ -79,15 +79,15 @@ export default defineContentScript({
       }
 
       captureVideoFrame(video, msg.mode)
-        .then(({ blob, thumb, width, height }) => {
+        .then(({ originalDataUrl, thumb, width, height }) => {
           const success: CaptureSuccess = {
             type: "CAPTURE_SUCCESS",
             captureId: generateId(),
             thumb,
+            originalDataUrl,
             width,
             height,
             videoTime: video.currentTime,
-            blob,
             mode: msg.mode,
             pageTitle: document.title,
           };

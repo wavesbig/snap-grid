@@ -8,10 +8,10 @@ export interface CaptureSuccess {
   type: 'CAPTURE_SUCCESS'
   captureId: string
   thumb: string
+  originalDataUrl: string
   width: number
   height: number
   videoTime: number
-  blob: Blob
   mode: 'grid' | 'subtitle'
   pageTitle: string
 }

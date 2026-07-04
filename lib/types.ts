@@ -2,7 +2,7 @@ export type CaptureMode = 'grid' | 'subtitle'
 
 export interface Capture {
   id: string
-  blob: Blob
+  originalDataUrl: string
   thumb: string // base64 data URL for thumbnail display
   sourceUrl: string
   videoTime: number // seconds

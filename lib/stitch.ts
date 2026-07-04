@@ -161,20 +161,52 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+function getImageSize(image: CanvasImageSource): { width: number; height: number } {
+  if (image instanceof HTMLImageElement) {
+    return {
+      width: image.naturalWidth || image.width,
+      height: image.naturalHeight || image.height,
+    }
+  }
+
+  if (image instanceof ImageBitmap) {
+    return {
+      width: image.width,
+      height: image.height,
+    }
+  }
+
+  throw new Error('Unsupported image source')
+}
+
+async function loadCaptureImage(
+  capture: Capture,
+  source: 'thumb' | 'blob',
+): Promise<{ image: CanvasImageSource; release: () => void }> {
+  if (source === 'thumb') {
+    const image = await loadImage(capture.thumb)
+    return { image, release: () => {} }
+  }
+
+  const image = await loadImage(capture.originalDataUrl)
+  return { image, release: () => {} }
+}
+
 function drawCover(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource,
   rect: Rect,
 ) {
-  const srcAspect = img.naturalWidth / img.naturalHeight
+  const { width: imageWidth, height: imageHeight } = getImageSize(img)
+  const srcAspect = imageWidth / imageHeight
   const dstAspect = rect.w / rect.h
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+  let sx = 0, sy = 0, sw = imageWidth, sh = imageHeight
   if (srcAspect > dstAspect) {
-    sw = img.naturalHeight * dstAspect
-    sx = (img.naturalWidth - sw) / 2
+    sw = imageHeight * dstAspect
+    sx = (imageWidth - sw) / 2
   } else {
-    sh = img.naturalWidth / dstAspect
-    sy = (img.naturalHeight - sh) / 2
+    sh = imageWidth / dstAspect
+    sy = (imageHeight - sh) / 2
   }
   ctx.drawImage(img, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h)
 }
@@ -231,57 +263,138 @@ function drawRoundRect(
   ctx.closePath()
 }
 
+function drawMissingCapture(
+  ctx: CanvasRenderingContext2D,
+  rect: Rect,
+  label = '加载失败',
+) {
+  ctx.save()
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.08)'
+  drawRoundRect(ctx, rect.x, rect.y, rect.w, rect.h, Math.min(16, rect.h * 0.12))
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.12)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(rect.x + 12, rect.y + 12)
+  ctx.lineTo(rect.x + rect.w - 12, rect.y + rect.h - 12)
+  ctx.moveTo(rect.x + rect.w - 12, rect.y + 12)
+  ctx.lineTo(rect.x + 12, rect.y + rect.h - 12)
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.56)'
+  ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2)
+  ctx.restore()
+}
+
 export async function renderToCanvas(
   layout: StitchLayout,
   mode: 'grid' | 'vertical' | 'subtitle',
   background = '#ffffff',
-  options?: { radius?: number; bandRatio?: number },
+  options?: {
+    radius?: number
+    bandRatio?: number
+    source?: 'thumb' | 'blob'
+    pixelRatio?: number
+  },
 ): Promise<HTMLCanvasElement> {
   const radius = options?.radius ?? 0
   const bandRatio = options?.bandRatio ?? 0.3
+  const source = options?.source ?? 'thumb'
+  const pixelRatio = Math.max(1, options?.pixelRatio ?? 1)
 
   const canvas = document.createElement('canvas')
-  canvas.width = layout.width
-  canvas.height = layout.height
+  canvas.width = Math.max(1, Math.round(layout.width * pixelRatio))
+  canvas.height = Math.max(1, Math.round(layout.height * pixelRatio))
   const ctx = canvas.getContext('2d')!
+  ctx.scale(pixelRatio, pixelRatio)
 
   if (background !== 'transparent') {
     ctx.fillStyle = background
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillRect(0, 0, layout.width, layout.height)
   }
 
-  for (const { capture, rect, crop } of layout.items) {
-    const img = await loadImage(capture.thumb)
-    withRoundedClip(ctx, rect, radius, () => {
-      if (crop === 'band') {
-        const srcBandH = img.naturalHeight * bandRatio
-        const srcY = img.naturalHeight - srcBandH
-        ctx.drawImage(img, 0, srcY, img.naturalWidth, srcBandH, rect.x, rect.y, rect.w, rect.h)
-      } else if (mode === 'grid') {
-        drawCover(ctx, img, rect)
-      } else {
-        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, rect.x, rect.y, rect.w, rect.h)
+  const loadedItems = await Promise.all(
+    layout.items.map(async (item) => {
+      try {
+        return {
+          ...item,
+          status: 'loaded' as const,
+          asset: await loadCaptureImage(item.capture, source),
+        }
+      } catch (error) {
+        return {
+          ...item,
+          status: 'failed' as const,
+          error,
+        }
       }
-    })
+    }),
+  )
 
-    // subtitle band: draw MM:SS time-code label on top, outside the rounded clip.
-    if (mode === 'subtitle' && crop === 'band') {
-      const mm = Math.floor(capture.videoTime / 60)
-      const ss = Math.floor(capture.videoTime % 60)
-      const label = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0')
-      const pad = Math.max(6, rect.h * 0.06)
-      const fontSize = Math.max(14, Math.round(rect.h * 0.12))
-      ctx.save()
-      ctx.font = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif'
-      ctx.textBaseline = 'top'
-      ctx.textAlign = 'left'
-      const textWidth = ctx.measureText(label).width
-      ctx.fillStyle = 'rgba(0,0,0,0.65)'
-      drawRoundRect(ctx, rect.x + pad * 0.5, rect.y + pad * 0.5, textWidth + pad, fontSize + pad * 0.5, pad * 0.25)
-      ctx.fill()
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(label, rect.x + pad, rect.y + pad * 0.75)
-      ctx.restore()
+  if (!loadedItems.some((item) => item.status === 'loaded')) {
+    const firstFailed = loadedItems.find((item) => item.status === 'failed')
+    throw new Error(
+      firstFailed && 'error' in firstFailed && firstFailed.error instanceof Error
+        ? firstFailed.error.message
+        : 'No preview assets could be loaded',
+    )
+  }
+
+  try {
+    for (const item of loadedItems) {
+      const { rect, crop, capture } = item
+      if (item.status === 'failed') {
+        console.warn('[snap-grid] Failed to load capture asset', {
+          captureId: capture.id,
+          sessionId: capture.sessionId,
+          source,
+          error: item.error,
+        })
+        drawMissingCapture(ctx, rect)
+        continue
+      }
+
+      const img = item.asset.image
+      const { width: imageWidth, height: imageHeight } = getImageSize(img)
+      withRoundedClip(ctx, rect, radius, () => {
+        if (crop === 'band') {
+          const srcBandH = imageHeight * bandRatio
+          const srcY = imageHeight - srcBandH
+          ctx.drawImage(img, 0, srcY, imageWidth, srcBandH, rect.x, rect.y, rect.w, rect.h)
+        } else if (mode === 'grid') {
+          drawCover(ctx, img, rect)
+        } else {
+          ctx.drawImage(img, 0, 0, imageWidth, imageHeight, rect.x, rect.y, rect.w, rect.h)
+        }
+      })
+
+      // subtitle band: draw MM:SS time-code label on top, outside the rounded clip.
+      if (mode === 'subtitle' && crop === 'band') {
+        const mm = Math.floor(capture.videoTime / 60)
+        const ss = Math.floor(capture.videoTime % 60)
+        const label = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0')
+        const pad = Math.max(6, rect.h * 0.06)
+        const fontSize = Math.max(14, Math.round(rect.h * 0.12))
+        ctx.save()
+        ctx.font = '600 ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif'
+        ctx.textBaseline = 'top'
+        ctx.textAlign = 'left'
+        const textWidth = ctx.measureText(label).width
+        ctx.fillStyle = 'rgba(0,0,0,0.65)'
+        drawRoundRect(ctx, rect.x + pad * 0.5, rect.y + pad * 0.5, textWidth + pad, fontSize + pad * 0.5, pad * 0.25)
+        ctx.fill()
+        ctx.fillStyle = '#ffffff'
+        ctx.fillText(label, rect.x + pad, rect.y + pad * 0.75)
+        ctx.restore()
+      }
+    }
+  } finally {
+    for (const item of loadedItems) {
+      if (item.status === 'loaded') {
+        item.asset.release()
+      }
     }
   }
 

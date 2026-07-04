@@ -56,7 +56,7 @@ import {
   clearAll,
   getCaptureBytes,
 } from "@/lib/db";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, getCaptureShortcutLabel } from "@/lib/utils";
 import type { Capture, Session } from "@/lib/types";
 import type { StitchOptions } from "@/lib/stitch";
 import { computeLayout, renderToCanvas, canvasToBlob } from "@/lib/stitch";
@@ -228,7 +228,14 @@ function App() {
   const [exportFormat, setExportFormat] = useState<"png" | "jpeg" | "webp">(
     "png",
   );
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFrame, setPreviewFrame] = useState<{
+    url: string;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [previewStatus, setPreviewStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
 
   const EDITOR_PREFS_KEY = "editorPrefs";
   const [exporting, setExporting] = useState(false);
@@ -400,21 +407,49 @@ function App() {
   useEffect(() => {
     if (renderTimer.current) clearTimeout(renderTimer.current);
     if (!layout) {
-      setPreviewUrl(null);
+      setPreviewFrame(null);
+      setPreviewStatus("idle");
       return;
     }
+    let cancelled = false;
+    setPreviewStatus("loading");
     renderTimer.current = setTimeout(() => {
       renderToCanvas(layout, mode, bgColor, {
         radius,
         bandRatio,
+        source: "blob",
+        pixelRatio:
+          typeof window === "undefined"
+            ? 1
+            : Math.min(Math.max(window.devicePixelRatio || 1, 1), 1.5),
       })
-        .then((canvas) => setPreviewUrl(canvas.toDataURL("image/png")))
-        .catch(() => setPreviewUrl(null));
+        .then((canvas) => {
+          if (cancelled) return;
+          setPreviewFrame({
+            url: canvas.toDataURL("image/png"),
+            width: layout.width,
+            height: layout.height,
+          });
+          setPreviewStatus("ready");
+        })
+        .catch((error) => {
+          if (cancelled) return;
+          console.error("[snap-grid] Preview render failed", {
+            sessionId,
+            captureCount: captures.length,
+            mode,
+            bgColor,
+            error,
+          });
+          setPreviewFrame(null);
+          setPreviewStatus("error");
+        });
     }, 100);
     return () => {
+      cancelled = true;
       if (renderTimer.current) clearTimeout(renderTimer.current);
     };
-  }, [layout, mode, bgColor, radius, bandRatio]);
+  }, [layout, mode, bgColor, radius, bandRatio, sessionId, captures.length]);
 
   const exportImage = async () => {
     if (!layout) return;
@@ -423,6 +458,7 @@ function App() {
       const canvas = await renderToCanvas(layout, mode, bgColor, {
         radius,
         bandRatio,
+        source: "blob",
       });
       const mimeMap = {
         png: "image/png",
@@ -457,6 +493,7 @@ function App() {
   const currentSessionLabel =
     sessions.find((s) => s.id === sessionId)?.title ??
     (sessionId === "default" ? "默认会话" : "当前会话");
+  const shortcutLabel = getCaptureShortcutLabel();
 
   return (
     <div className="glass-canvas flex h-[100dvh] flex-col p-4 text-foreground">
@@ -583,7 +620,7 @@ function App() {
                   />
                   <p className="text-xs text-muted-foreground">还没有画面</p>
                   <p className="text-[11px] text-muted-foreground/70">
-                    前往 B站 按 Alt+S 截取
+                    前往 B站 按 {shortcutLabel} 截取
                   </p>
                 </div>
               ) : (
@@ -631,7 +668,7 @@ function App() {
                   ))}
                 </TabsList>
               </Tabs>
-              {previewUrl && (
+              {previewFrame && (
                 <div className="preview-toolbar flex items-center gap-1 rounded-full p-1">
                   <button
                     onClick={() =>
@@ -654,12 +691,16 @@ function App() {
               )}
             </div>
             <div className="workspace-stage-inner flex flex-1 overflow-auto p-4">
-              {previewUrl ? (
+              {previewFrame ? (
                 <div className="preview-canvas flex min-h-full w-full items-center justify-center rounded-[28px] p-6">
                   <img
-                    src={previewUrl}
+                    src={previewFrame.url}
                     alt="拼接预览"
-                    style={{ transform: `scale(${previewSize})` }}
+                    style={{
+                      width: `${previewFrame.width}px`,
+                      height: `${previewFrame.height}px`,
+                      transform: `scale(${previewSize})`,
+                    }}
                     className="max-h-full max-w-full rounded-[22px] border border-black/5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.3)] transition-transform duration-200 ease-spring dark:border-white/8 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
                   />
                 </div>
@@ -671,7 +712,9 @@ function App() {
                   <p className="text-sm text-muted-foreground dark:text-white/58">
                     {captures.length === 0
                       ? "截取画面后这里会显示拼接预览"
-                      : "正在生成预览..."}
+                      : previewStatus === "error"
+                        ? "预览生成失败，请稍后重试"
+                        : "正在生成预览..."}
                   </p>
                 </div>
               )}
