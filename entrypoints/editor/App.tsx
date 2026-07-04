@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
 import {
   Grid2x2,
   Rows3,
@@ -63,6 +63,20 @@ import { computeLayout, renderToCanvas, canvasToBlob } from "@/lib/stitch";
 
 type StitchMode = "grid" | "vertical" | "subtitle";
 
+const modeConfig = [
+  { value: "grid" as const, label: "拼图", icon: Grid2x2 },
+  { value: "vertical" as const, label: "长图", icon: Rows3 },
+  { value: "subtitle" as const, label: "字幕", icon: Captions },
+];
+
+function chipButtonClass(active: boolean) {
+  return `flex-1 rounded-full px-2.5 py-2 text-[11px] transition-colors ${
+    active
+      ? "border border-primary/16 bg-primary text-primary-foreground"
+      : "control-surface text-muted-foreground hover:text-foreground"
+  }`;
+}
+
 // ----- reusable slider -----
 
 function ParamSlider({
@@ -82,16 +96,21 @@ function ParamSlider({
   unit?: string;
   onChange: (v: number) => void;
 }) {
+  const inputId = useId();
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <label htmlFor={inputId} className="text-xs text-muted-foreground">
+          {label}
+        </label>
         <span className="text-[11px] tabular-nums text-muted-foreground">
           {value}
           {unit}
         </span>
       </div>
       <input
+        id={inputId}
         type="range"
         min={min}
         max={max}
@@ -121,9 +140,10 @@ function ParamStepper({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <label className="text-xs text-muted-foreground">{label}</label>
+      <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-center gap-1">
         <button
+          type="button"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           className="control-surface flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
@@ -134,6 +154,7 @@ function ParamStepper({
           {value}
         </span>
         <button
+          type="button"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           className="control-surface flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
@@ -185,6 +206,7 @@ function SortableCapture({
       }`}
     >
       <button
+        type="button"
         {...attributes}
         {...listeners}
         className="cursor-grab touch-none py-1 pl-0.5 text-muted-foreground/40 transition-colors hover:text-foreground active:cursor-grabbing"
@@ -206,6 +228,7 @@ function SortableCapture({
         </span>
       </div>
       <button
+        type="button"
         onClick={() => onDelete(capture.id)}
         className="rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-destructive/8 hover:text-destructive"
       >
@@ -328,7 +351,7 @@ function App() {
         },
       })
       .catch(() => {});
-  }, [mode, gap, columns, bandRatio, radius, bgColor, previewSize]);
+  }, [mode, gap, columns, bandRatio, radius, bgColor, previewSize, exportFormat]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -477,19 +500,6 @@ function App() {
     }
   };
 
-  const modeConfig = [
-    { value: "grid" as const, label: "拼图", icon: Grid2x2 },
-    { value: "vertical" as const, label: "长图", icon: Rows3 },
-    { value: "subtitle" as const, label: "字幕", icon: Captions },
-  ];
-
-  const chipButtonClass = (active: boolean) =>
-    `flex-1 rounded-full px-2.5 py-2 text-[11px] transition-colors ${
-      active
-        ? "border border-primary/16 bg-primary text-primary-foreground"
-        : "control-surface text-muted-foreground hover:text-foreground"
-    }`;
-
   const currentSessionLabel =
     sessions.find((s) => s.id === sessionId)?.title ??
     (sessionId === "default" ? "默认会话" : "当前会话");
@@ -599,7 +609,7 @@ function App() {
       {/* three-column workspace */}
       <div className="mt-4 flex flex-1 gap-4 overflow-hidden">
         {/* left: capture list */}
-        <div className="soft-shell flex w-72 rounded-[28px] p-1.5">
+        <div className="soft-shell flex w-72 shrink-0 rounded-[28px] p-1.5">
           <div className="soft-core flex w-full flex-col rounded-[22px]">
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs font-medium text-muted-foreground">
@@ -651,8 +661,8 @@ function App() {
         </div>
 
         {/* center: preview */}
-        <div className="soft-shell flex flex-1 rounded-[32px] p-1.5">
-          <div className="soft-core flex w-full flex-col overflow-hidden rounded-[26px]">
+        <div className="soft-shell flex min-w-0 flex-1 rounded-[32px] p-1.5">
+          <div className="soft-core flex min-w-0 w-full flex-col overflow-hidden rounded-[26px]">
             <div className="flex items-center justify-between border-b border-black/5 px-4 py-3 dark:border-white/6">
               <Tabs value={mode} onValueChange={handleModeChange}>
                 <TabsList className="preview-toolbar rounded-full p-1">
@@ -671,6 +681,7 @@ function App() {
               {previewFrame && (
                 <div className="preview-toolbar flex items-center gap-1 rounded-full p-1">
                   <button
+                    type="button"
                     onClick={() =>
                       setPreviewSize((s) => Math.max(0.25, s - 0.25))
                     }
@@ -682,6 +693,7 @@ function App() {
                     {Math.round(previewSize * 100)}%
                   </span>
                   <button
+                    type="button"
                     onClick={() => setPreviewSize((s) => Math.min(3, s + 0.25))}
                     className="control-surface flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                   >
@@ -692,17 +704,22 @@ function App() {
             </div>
             <div className="workspace-stage-inner flex flex-1 overflow-auto p-4">
               {previewFrame ? (
-                <div className="preview-canvas flex min-h-full w-full items-center justify-center rounded-[28px] p-6">
-                  <img
-                    src={previewFrame.url}
-                    alt="拼接预览"
+                <div className="preview-canvas flex min-h-full w-full items-start justify-center rounded-[28px] p-6">
+                  <div
                     style={{
                       width: `${previewFrame.width}px`,
                       height: `${previewFrame.height}px`,
                       transform: `scale(${previewSize})`,
+                      transformOrigin: "top center",
                     }}
-                    className="max-h-full max-w-full rounded-[22px] border border-black/5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.3)] transition-transform duration-200 ease-spring dark:border-white/8 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
-                  />
+                    className="shrink-0 transition-transform duration-200 ease-spring"
+                  >
+                    <img
+                      src={previewFrame.url}
+                      alt="拼接预览"
+                      className="block size-full rounded-[22px] border border-black/5 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.3)] dark:border-white/8 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="preview-canvas flex min-h-full w-full flex-col items-center justify-center gap-3 rounded-[28px] p-6 text-center">
@@ -723,7 +740,7 @@ function App() {
         </div>
 
         {/* right: params panel */}
-        <div className="soft-shell flex w-72 rounded-[28px] p-1.5">
+        <div className="soft-shell flex w-72 shrink-0 rounded-[28px] p-1.5">
           <div className="soft-core flex w-full flex-col overflow-y-auto rounded-[22px]">
             <div className="px-4 py-3">
               <span className="text-xs font-medium text-muted-foreground">
@@ -754,8 +771,8 @@ function App() {
               />
 
               {/* common: background */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs text-muted-foreground">背景</label>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-xs text-muted-foreground">背景</legend>
                 <div className="flex gap-1.5">
                   {(
                     [
@@ -766,6 +783,7 @@ function App() {
                   ).map(([val, label]) => (
                     <button
                       key={val}
+                      type="button"
                       onClick={() => setBgColor(val)}
                       className={chipButtonClass(bgColor === val)}
                     >
@@ -773,17 +791,18 @@ function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               {/* export format */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs text-muted-foreground">
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-xs text-muted-foreground">
                   导出格式
-                </label>
+                </legend>
                 <div className="flex gap-1.5">
                   {(["png", "jpeg", "webp"] as const).map((fmt) => (
                     <button
                       key={fmt}
+                      type="button"
                       onClick={() => setExportFormat(fmt)}
                       className={chipButtonClass(exportFormat === fmt)}
                     >
@@ -791,7 +810,7 @@ function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </fieldset>
 
               {/* grid: columns */}
               {mode === "grid" && captures.length > 0 && (

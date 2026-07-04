@@ -163,6 +163,7 @@ function App() {
               </div>
               <div className="flex max-h-[152px] flex-col gap-1.5 overflow-y-auto">
                 <button
+                  type="button"
                   onClick={() => {
                     shouldAutoSelectCurrentSession.current = false;
                     setSelectedSession(null);
@@ -187,6 +188,7 @@ function App() {
                 {sessions.map((s) => (
                   <button
                     key={s.id}
+                    type="button"
                     onClick={() => {
                       shouldAutoSelectCurrentSession.current = false;
                       setSelectedSession(s.id);
@@ -240,6 +242,7 @@ function App() {
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={handleClearAll}
                   className="control-surface flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
                 >
