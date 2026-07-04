@@ -48,25 +48,39 @@ export function layoutGrid(
   const requestedCols = opts.columns ?? 2
   const cols = Math.max(1, Math.min(requestedCols, captures.length))
   const cellW = opts.cellWidth ?? 480
-  const cellH = Math.round(cellW * 9 / 16)
-  const rows = Math.ceil(captures.length / cols)
-  const width = cols * cellW + (cols - 1) * gap
-  const height = rows * cellH + (rows - 1) * gap
+  const columnHeights = new Array(cols).fill(0)
 
-  const items: StitchItem[] = captures.map((capture, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
+  const items: StitchItem[] = captures.map((capture, index) => {
+    const aspect = capture.height / capture.width
+    const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 9 / 16
+    const scaledH = Math.round(cellW * safeAspect)
+
+    let col = index % cols
+    let minHeight = columnHeights[col]
+    for (let i = 0; i < cols; i += 1) {
+      if (columnHeights[i] < minHeight) {
+        minHeight = columnHeights[i]
+        col = i
+      }
+    }
+
+    const rect = {
+      x: col * (cellW + gap),
+      y: columnHeights[col],
+      w: cellW,
+      h: scaledH,
+    }
+    columnHeights[col] += scaledH + gap
+
     return {
       capture,
       crop: 'full',
-      rect: {
-        x: col * (cellW + gap),
-        y: row * (cellH + gap),
-        w: cellW,
-        h: cellH,
-      },
+      rect,
     }
   })
+
+  const width = cols * cellW + (cols - 1) * gap
+  const height = Math.max(0, ...columnHeights) - (captures.length > 0 ? gap : 0)
 
   return { width, height, items }
 }
@@ -363,8 +377,6 @@ export async function renderToCanvas(
           const srcBandH = imageHeight * bandRatio
           const srcY = imageHeight - srcBandH
           ctx.drawImage(img, 0, srcY, imageWidth, srcBandH, rect.x, rect.y, rect.w, rect.h)
-        } else if (mode === 'grid') {
-          drawCover(ctx, img, rect)
         } else {
           ctx.drawImage(img, 0, 0, imageWidth, imageHeight, rect.x, rect.y, rect.w, rect.h)
         }
