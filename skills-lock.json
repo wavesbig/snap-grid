@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
       "computedHash": "4f78ff7cd3a4f637b6fe30dbbab4a80a19dd63fa62d9352bed461ccfdbcbbf43"
+    },
+    "wxt-browser-extensions": {
+      "source": "pproenca/dot-skills",
+      "sourceType": "github",
+      "skillPath": "skills/.experimental/wxt-browser-extensions/SKILL.md",
+      "computedHash": "3cb5453d026a8a223bc3d788bd5ddb0dae230a39508ae002a66cbce67a8f0e96"
     }
   }
 }
